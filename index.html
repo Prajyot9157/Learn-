@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Become a Partner | Assignment Assist</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Animations Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <style>
+        /* --- 1. THEME VARIABLES (Matching Main Site) --- */
+        :root {
+            --bg-dark: #0f172a;       /* Deep Navy */
+            --primary: #6366f1;       /* Indigo */
+            --secondary: #0ea5e9;     /* Sky Blue */
+            --accent: #f43f5e;        /* Rose */
+            --success: #22c55e;       /* Green for money */
+            --text-main: #f1f5f9;     /* White-ish */
+            --text-muted: #94a3b8;    /* Grey */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+            --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- 2. GLOBAL STYLES --- */
+        html { scroll-behavior: smooth; }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden; 
+            /* Same gradient background as main site */
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.15) 0%, transparent 25%);
+            background-attachment: fixed;
+        }
+
+        .container { width: 90%; max-width: 1200px; margin: auto; }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
+        ul { list-style: none; padding: 0; }
+
+        /* --- 3. GLASSMORPHISM CARDS --- */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+            border-color: var(--primary);
+        }
+        
+        /* Special highlight for earnings */
+        .glass-card.earning-card {
+            border-color: var(--success);
+        }
+        .glass-card.earning-card:hover {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+        }
+
+        /* --- 4. HEADER & NAV --- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            position: relative;
+            z-index: 1000;
+        }
+        .logo { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            background: linear-gradient(to right, var(--secondary), var(--primary)); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .menu-btn {
+            font-size: 1.5rem;
+            color: white;
+            cursor: pointer;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            transition: all 0.2s ease-out;
+            border: 1px solid transparent;
+        }
+        .menu-btn:hover { 
+            background: rgba(255,255,255,0.2); 
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed;
+            top: 0; right: 0;
+            width: 300px;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.98);
+            border-left: 1px solid var(--primary);
+            padding: 80px 30px;
+            transform: translateX(100%); 
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            z-index: 9999;
+            box-shadow: -10px 0 50px rgba(0,0,0,0.8);
+        }
+        .sidebar.active { transform: translateX(0); }
+        
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding: 12px;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+        .sidebar-link i { 
+            width: 40px; text-align: center; color: var(--secondary); 
+            font-size: 1.3rem; margin-right: 10px; 
+        }
+        .sidebar-link:hover { 
+            color: white; 
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.2) 0%, transparent 100%);
+            padding-left: 18px; 
+        }
+        
+        .close-btn {
+            position: absolute; top: 25px; right: 25px;
+            font-size: 1.5rem; cursor: pointer; color: var(--accent);
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 9990;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .overlay.active { opacity: 1; pointer-events: auto; }
+
+        /* --- 5. HERO SECTION --- */
+        .hero { text-align: center; padding: 100px 0 60px; }
+        .hero h1 { font-size: 3.5rem; margin-bottom: 20px; line-height: 1.2; }
+        .hero p { color: var(--text-muted); font-size: 1.2rem; max-width: 600px; margin: 0 auto 40px; }
+        
+        .btn {
+            display: inline-block; padding: 12px 30px;
+            border-radius: 50px; font-weight: 600;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            border: none; cursor: pointer;
+        }
+        .btn:hover { transform: scale(1.05); }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            margin-left: 15px;
+        }
+        .btn-outline:hover {
+            border-color: white;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* --- 6. REQUIREMENTS GRID --- */
+        .section-title { text-align: center; font-size: 2.5rem; margin-bottom: 50px; }
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px; margin-bottom: 80px;
+        }
+        .icon-box {
+            font-size: 2.5rem; color: var(--secondary); margin-bottom: 20px;
+        }
+        
+        /* --- 7. EARNINGS BADGE --- */
+        .earnings-badge {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 10px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        /* --- 8. APPLICATION FORM WRAPPER --- */
+        .form-wrapper {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .form-container {
+            padding: 40px;
+            background: var(--glass-bg);
+            border: var(--glass-border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+        
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; color: var(--text-muted); margin-bottom: 8px; font-size: 0.9rem; }
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            box-sizing: border-box;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+
+        /* --- 9. STEPS TO JOIN --- */
+        .steps-row {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; margin: 50px 0;
+        }
+        .step-item {
+            flex: 1; min-width: 200px; max-width: 300px; text-align: center;
+        }
+        .step-circle {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold; margin: 0 auto 20px;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Mobile Fixes */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .sidebar { width: 85%; }
+            .btn-outline { margin-left: 0; margin-top: 15px; display: inline-block; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Dark Overlay for Menu -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Navigation -->
+    <div class="container">
+        <nav>
+            <div class="logo">
+                <a href="index.html">
+                    <i class="fas fa-handshake"></i> Partner Program
+                </a>
+            </div>
+            
+            <div class="nav-actions">
+                <!-- Back to Main Site button -->
+                <a href="https://prajyot9157.github.io/Assignment/" class="btn" style="padding: 8px 20px; font-size: 0.9rem; background: var(--glass-bg); border: 1px solid var(--text-muted);">
+                    <i class="fas fa-arrow-left"></i> Back to Site
+                </a>
+                <div class="menu-btn" onclick="toggleMenu()">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Right Sidebar Menu -->
+    <div class="sidebar" id="sidebar">
+        <div class="close-btn" onclick="toggleMenu()"><i class="fas fa-times"></i></div>
+        <h3 style="margin-bottom: 30px; color: white; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">Partner Menu</h3>
+        <a href="https://prajyot9157.github.io/Assignment/" class="sidebar-link"><i class="fas fa-home"></i> Main Site</a>
+        <a href="#benefits" class="sidebar-link" onclick="toggleMenu()"><i class="fas fa-gift"></i> Benefits</a>
+        <a href="#requirements" class="sidebar-link" onclick="toggleMenu()"><i class="fas fa-check-circle"></i> Requirements</a>
+        <a href="#apply" class="sidebar-link" onclick="toggleMenu()"><i class="fas fa-file-signature"></i> Apply Now</a>
+        <div style="margin-top: 50px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px;">
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0;">Have questions?</p>
+            <div style="display: flex; gap: 15px;">
+                <a href="https://wa.me/917048596598" target="_blank" style="font-size: 1.5rem; color: #25d366;"><i class="fab fa-whatsapp"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <header class="hero container">
+        <div class="earnings-badge" data-aos="fade-down">
+            <i class="fas fa-money-bill-wave"></i> Earn up to ₹10,000/month
+        </div>
+        <h1 data-aos="fade-up" data-aos-delay="100">Turn Your Knowledge <br> Into <span id="typing-text" style="color: var(--secondary);"></span></h1>
+        <p data-aos="fade-up" data-aos-delay="200">
+            Join Assignment Assist as an academic writer. Help students succeed while earning flexible income from the comfort of your home.
+        </p>
+        <div data-aos="fade-up" data-aos-delay="300">
+            <a href="#apply" class="btn">Apply Now</a>
+            <a href="#howitworks" class="btn btn-outline">How it Works?</a>
+        </div>
+    </header>
+
+    <!-- Why Join Us? (Benefits) -->
+    <section id="benefits" class="container">
+        <h2 class="section-title" data-aos="fade-up">Why Partner With Us?</h2>
+        <div class="grid">
+            <div class="glass-card earning-card" data-aos="fade-up" data-aos-delay="100">
+                <i class="fas fa-wallet icon-box" style="color: var(--success);"></i>
+                <h3>Timely Payments</h3>
+                <p style="color: var(--text-muted);">Get paid weekly or per assignment. No hidden charges or delays. Your hard work deserves instant rewards.</p>
+            </div>
+            <div class="glass-card" data-aos="fade-up" data-aos-delay="200">
+                <i class="fas fa-laptop-house icon-box"></i>
+                <h3>Work from Home</h3>
+                <p style="color: var(--text-muted);">No commute. No office. Work from your dorm room, library, or home. You choose your own hours.</p>
+            </div>
+            <div class="glass-card" data-aos="fade-up" data-aos-delay="300">
+                <i class="fas fa-book-open icon-box"></i>
+                <h3>Choose Your Subject</h3>
+                <p style="color: var(--text-muted);">Love coding? Or prefer writing theories? Pick tasks that match your skills and interests.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works Steps -->
+    <section id="howitworks" class="container" style="margin-bottom: 80px; text-align: center;">
+        <h2 class="section-title" data-aos="fade-up">Process Flow</h2>
+        <div class="steps-row">
+            <div class="step-item" data-aos="zoom-in" data-aos-delay="100">
+                <div class="step-circle">1</div>
+                <h3>Apply</h3>
+                <p style="color: var(--text-muted);">Fill the form below with your handwriting sample or portfolio.</p>
+            </div>
+            <div class="step-item" data-aos="zoom-in" data-aos-delay="200">
+                <div class="step-circle">2</div>
+                <h3>Verify</h3>
+                <p style="color: var(--text-muted);">Our team reviews your skills and onboards you to the private group.</p>
+            </div>
+            <div class="step-item" data-aos="zoom-in" data-aos-delay="300">
+                <div class="step-circle">3</div>
+                <h3>Earn</h3>
+                <p style="color: var(--text-muted);">Pick tasks, complete them, and get paid directly to your UPI.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Requirements Section -->
+    <section id="requirements" class="container" style="margin-bottom: 100px;">
+        <h2 class="section-title" data-aos="fade-up">Who We Are Looking For</h2>
+        <div class="grid">
+            <div class="glass-card" data-aos="fade-up">
+                <h4><i class="fas fa-pen-fancy" style="color:var(--accent); margin-right:10px;"></i> Neat Handwriting</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    If you have clean, legible handwriting (cursive or print), you are in high demand for journal writing.
+                </p>
+            </div>
+            <div class="glass-card" data-aos="fade-up" data-aos-delay="100">
+                <h4><i class="fas fa-code" style="color:var(--secondary); margin-right:10px;"></i> Tech Wizards</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    CS/IT students who can code basic projects in Python, Java, or Web Dev are needed for technical help.
+                </p>
+            </div>
+            <div class="glass-card" data-aos="fade-up" data-aos-delay="200">
+                <h4><i class="fas fa-clock" style="color:var(--primary); margin-right:10px;"></i> Punctuality</h4>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
+                    Deadlines are sacred here. If you commit to a time, we expect delivery on time.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Application Form -->
+    <section id="apply" class="container" style="margin-bottom: 100px;">
+        <h2 class="section-title" data-aos="fade-up">Join the Team</h2>
+        <div class="form-container" data-aos="fade-up">
+            <form onsubmit="handleApply(event)">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" placeholder="e.g. Ayush wadke " required>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="input-group">
+                        <label>Phone Number (WhatsApp)</label>
+                        <input type="tel" placeholder="7048×××××8" required>
+                    </div>
+                    <div class="input-group">
+                        <label>College / University</label>
+                        <input type="text" placeholder="e.g. COEP, Pune" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Expertise (Select all that apply)</label>
+                    <select required>
+                        <option value="">Select your skill...</option>
+                        <option value="handwriting">Handwriting / Journals</option>
+                        <option value="ppt">PPT Making</option>
+                        <option value="coding">Coding / Technical Projects</option>
+                        <option value="research">Thesis / Report Writing</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>Short Bio / Experience</label>
+                    <textarea rows="4" placeholder="Tell us why you are a good fit..."></textarea>
+                </div>
+
+                <div class="input-group" style="text-align: center;">
+                    <button type="submit" class="btn" style="width: 100%;">Submit Application</button>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px;">
+                        By clicking submit, you agree to our quality standards.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 50px 0; border-top: 1px solid rgba(255,255,255,0.1);">
+        <p style="color: var(--text-muted);">© 2025 AssignmentAssist Partner Program.</p>
+        <div style="margin-top: 20px;">
+            <a href="https://prajyot9157.github.io/Assignment/" style="color: var(--secondary); font-size: 0.9rem;">Back to Main Website</a>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://unpkg.com/typed.js@2.0.16/dist/typed.umd.js"></script>
+    
+    <script>
+        // 1. Init Animations
+        AOS.init({ duration: 800, offset: 50 });
+
+        // 2. Typing Effect for Hero
+        var typed = new Typed('#typing-text', {
+            strings: ['Income 💰', 'Experience 📈', 'Perks💸'],
+            typeSpeed: 60,
+            backSpeed: 40,
+            loop: true
+        });
+
+        // 3. Sidebar Toggle Logic
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+        document.getElementById('overlay').addEventListener('click', toggleMenu);
+
+        // 4. Mock Form Submission
+        function handleApply(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            
+            btn.innerText = "Sending...";
+            btn.style.opacity = "0.7";
+            
+            setTimeout(() => {
+                alert("Application Sent! We will contact you on WhatsApp shortly.");
+                btn.innerText = "Application Submitted ✓";
+                btn.style.background = "var(--success)";
+                e.target.reset();
+            }, 1500);
+        }
+    </script>
+</body>
+</html></html>
