@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JEE Main 2027 Interactive Planner</title>
+    <title>MHT-CET 2027 4-Month Study Planner</title>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -23,14 +23,22 @@
                         math: '#592e83',
                     },
                     animation: {
-                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'bounce-in': 'bounceIn 0.5s ease-out',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'pulse-glow': 'pulseGlow 2s infinite',
                     },
                     keyframes: {
-                        bounceIn: {
-                            '0%': { transform: 'scale(0.9)', opacity: '0' },
-                            '50%': { transform: 'scale(1.02)' },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        popIn: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
                             '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 0 0 rgba(28, 88, 196, 0.4)' },
+                            '50%': { boxShadow: '0 0 0 10px rgba(28, 88, 196, 0)' },
                         }
                     }
                 }
@@ -47,78 +55,150 @@
     <!-- Lucide Icons & Chart.js -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Confetti */
+        .confetti-piece {
+            position: absolute; width: 10px; height: 10px; background: #f2d74e;
+            top: 50%; left: 50%; opacity: 0; pointer-events: none;
+        }
+        .confetti-piece:nth-child(1) { background: #ca3c66; transform: translate(-50%, -50%) rotate(15deg); animation: confetti-burst 1.2s ease-out forwards; }
+        .confetti-piece:nth-child(2) { background: #69c9d0; transform: translate(-50%, -50%) rotate(45deg); animation: confetti-burst 1.2s ease-out forwards; animation-delay: 0.1s; }
+        .confetti-piece:nth-child(3) { background: #f2d74e; transform: translate(-50%, -50%) rotate(80deg); animation: confetti-burst 1.2s ease-out forwards; animation-delay: 0.2s; }
+        .confetti-piece:nth-child(4) { background: #ca3c66; transform: translate(-50%, -50%) rotate(120deg); animation: confetti-burst 1.2s ease-out forwards; }
+        .confetti-piece:nth-child(5) { background: #69c9d0; transform: translate(-50%, -50%) rotate(160deg); animation: confetti-burst 1.2s ease-out forwards; animation-delay: 0.1s; }
+        
+        @keyframes confetti-burst {
+            0% { opacity: 1; top: 50%; left: 50%; }
+            100% { opacity: 0; top: -50%; left: calc(50% + (var(--x, 1) * 150px)); }
+        }
+    </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200 font-sans">
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-300 font-sans">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- DATA ---
+        // --- DATA (MHT CET Syllabus with Difficulty/Priority) ---
         const SYLLABUS_DATA = {
             physics: [
-                "Units and Measurements", "Kinematics", "Laws of Motion", "Work Energy and Power", "Rotational Motion", 
-                "Gravitation", "Properties of Solids and Liquids", "Thermodynamics", "Kinetic Theory of Gases", 
-                "Oscillations and Waves", "Electrostatics", "Current Electricity", "Magnetism", "Electromagnetic Induction and AC", 
-                "Electromagnetic Waves", "Optics", "Dual Nature of Matter", "Atoms and Nuclei", "Electronic Devices", "Experimental Skills"
+                { name: "Units and Measurements", priority: "Low", difficulty: "Basic" },
+                { name: "Kinematics", priority: "High", difficulty: "Intermediate" },
+                { name: "Laws of Motion", priority: "High", difficulty: "Intermediate" },
+                { name: "Work Energy and Power", priority: "High", difficulty: "Basic" },
+                { name: "Rotational Motion", priority: "High", difficulty: "Advanced" },
+                { name: "Gravitation", priority: "Medium", difficulty: "Basic" },
+                { name: "Properties of Solids and Liquids", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Thermodynamics", priority: "High", difficulty: "Advanced" },
+                { name: "Kinetic Theory of Gases", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Oscillations and Waves", priority: "High", difficulty: "Advanced" },
+                { name: "Electrostatics", priority: "High", difficulty: "Intermediate" },
+                { name: "Current Electricity", priority: "High", difficulty: "Intermediate" },
+                { name: "Magnetism", priority: "Medium", difficulty: "Advanced" },
+                { name: "Electromagnetic Induction and AC", priority: "Medium", difficulty: "Advanced" },
+                { name: "Electromagnetic Waves", priority: "Low", difficulty: "Basic" },
+                { name: "Optics", priority: "High", difficulty: "Intermediate" },
+                { name: "Dual Nature of Matter", priority: "Medium", difficulty: "Basic" },
+                { name: "Atoms and Nuclei", priority: "Medium", difficulty: "Basic" },
+                { name: "Semiconductor Devices", priority: "High", difficulty: "Basic" },
+                { name: "Experimental Skills", priority: "Low", difficulty: "Basic" }
             ],
             chemistry: [
-                "Some Basic Concepts", "Atomic Structure", "Chemical Bonding", "Chemical Thermodynamics", "Solutions", 
-                "Equilibrium", "Redox Reactions and Electrochemistry", "Chemical Kinetics", "Classification of Elements", 
-                "p-Block Elements", "d- and f-Block Elements", "Coordination Compounds", "Purification and Characterisation", 
-                "General Organic Chemistry", "Hydrocarbons", "Organic Compounds with Halogens", "Oxygen-containing Organics", 
-                "Nitrogen-containing Organics", "Biomolecules", "Practical Chemistry"
+                { name: "Some Basic Concepts", priority: "High", difficulty: "Basic" },
+                { name: "Atomic Structure", priority: "High", difficulty: "Basic" },
+                { name: "Chemical Bonding", priority: "High", difficulty: "Intermediate" },
+                { name: "Chemical Thermodynamics", priority: "High", difficulty: "Advanced" },
+                { name: "Solutions", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Equilibrium", priority: "High", difficulty: "Advanced" },
+                { name: "Redox Reactions and Electrochemistry", priority: "High", difficulty: "Advanced" },
+                { name: "Chemical Kinetics", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Classification of Elements", priority: "Medium", difficulty: "Basic" },
+                { name: "p-Block Elements", priority: "High", difficulty: "Intermediate" },
+                { name: "d- and f-Block Elements", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Coordination Compounds", priority: "High", difficulty: "Advanced" },
+                { name: "Purification and Characterisation", priority: "Low", difficulty: "Basic" },
+                { name: "General Organic Chemistry", priority: "High", difficulty: "Advanced" },
+                { name: "Hydrocarbons", priority: "High", difficulty: "Intermediate" },
+                { name: "Halogen Derivatives", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Oxygen-containing Organics", priority: "High", difficulty: "Advanced" },
+                { name: "Nitrogen-containing Organics", priority: "Medium", difficulty: "Advanced" },
+                { name: "Biomolecules", priority: "Low", difficulty: "Basic" },
+                { name: "Practical Chemistry", priority: "Low", difficulty: "Basic" }
             ],
             maths: [
-                "Sets, Relations and Functions", "Complex Numbers", "Matrices and Determinants", "Permutations and Combinations", 
-                "Binomial Theorem", "Sequences and Series", "Limits, Continuity and Differentiability", "Integral Calculus", 
-                "Differential Equations", "Coordinate Geometry (2D)", "Three-Dimensional Geometry", "Vector Algebra", 
-                "Statistics and Probability", "Trigonometry"
+                { name: "Mathematical Logic", priority: "Medium", difficulty: "Basic" },
+                { name: "Matrices", priority: "High", difficulty: "Basic" },
+                { name: "Trigonometric Functions", priority: "High", difficulty: "Intermediate" },
+                { name: "Pair of Straight Lines", priority: "High", difficulty: "Advanced" },
+                { name: "Vectors", priority: "High", difficulty: "Intermediate" },
+                { name: "Three Dimensional Geometry", priority: "High", difficulty: "Advanced" },
+                { name: "Linear Programming", priority: "Medium", difficulty: "Basic" },
+                { name: "Differentiation", priority: "High", difficulty: "Intermediate" },
+                { name: "Applications of Derivatives", priority: "High", difficulty: "Advanced" },
+                { name: "Integration", priority: "High", difficulty: "Advanced" },
+                { name: "Definite Integration", priority: "High", difficulty: "Advanced" },
+                { name: "Applications of Definite Integration", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Differential Equations", priority: "High", difficulty: "Advanced" },
+                { name: "Probability Distributions", priority: "Medium", difficulty: "Intermediate" },
+                { name: "Binomial Distribution", priority: "Medium", difficulty: "Basic" },
+                { name: "Complex Numbers", priority: "High", difficulty: "Intermediate" },
+                { name: "Sequences and Series", priority: "High", difficulty: "Intermediate" },
+                { name: "Permutations and Combinations", priority: "High", difficulty: "Basic" }
             ]
         };
 
-        // Generate 60 day plan with individual task tracking
+        // Generate 120-day plan starting from Oct 25, 2026 to Mar 2027
         const generatePlan = () => {
             const plan = {};
-            for (let i = 1; i <= 60; i++) {
-                let pTask = "", cTask = "", mTask = "";
+            const pList = SYLLABUS_DATA.physics;
+            const cList = SYLLABUS_DATA.chemistry;
+            const mList = SYLLABUS_DATA.maths;
+
+            for (let i = 1; i <= 120; i++) {
                 let phase = "";
-                
-                if (i <= 10) {
-                    phase = "Foundations";
-                    pTask = SYLLABUS_DATA.physics[Math.floor(i/2.5)] || "Basic Concepts";
-                    cTask = SYLLABUS_DATA.chemistry[Math.floor(i/2.5)] || "Basic Concepts";
-                    mTask = SYLLABUS_DATA.maths[Math.floor(i/2.5)] || "Basic Concepts";
-                } else if (i <= 20) {
-                    phase = "Core Concepts";
-                    pTask = SYLLABUS_DATA.physics[Math.floor(i/2)];
-                    cTask = SYLLABUS_DATA.chemistry[Math.floor(i/2)];
-                    mTask = SYLLABUS_DATA.maths[Math.floor(i/2)];
-                } else if (i <= 30) {
-                    phase = "Electricity, Organic & Calculus";
-                    pTask = SYLLABUS_DATA.physics[Math.floor(i/1.5)];
-                    cTask = SYLLABUS_DATA.chemistry[Math.floor(i/1.5)];
-                    mTask = SYLLABUS_DATA.maths[Math.floor(i/1.5)];
-                } else if (i <= 40) {
-                    phase = "Major Remaining Topics";
-                    pTask = SYLLABUS_DATA.physics[i-20] || "Revise";
-                    cTask = SYLLABUS_DATA.chemistry[i-20] || "Revise";
-                    mTask = SYLLABUS_DATA.maths[i-25] || "Revise";
-                } else if (i <= 50) {
-                    phase = "Remaining Topics & PYQs";
-                    pTask = "PYQs & Practice"; cTask = "PYQs & Practice"; mTask = "PYQs & Practice";
+                if (i <= 35) phase = "Phase 1: Foundation";
+                else if (i <= 70) phase = "Phase 2: Syllabus Coverage";
+                else if (i <= 95) phase = "Phase 3: Completion & Practice";
+                else phase = "Phase 4: Revision & Testing";
+
+                // Determine chapter based on day
+                let pChap, cChap, mChap;
+                if (i <= 95) {
+                    // Covering syllabus (Spread 20 chapters over 95 days -> ~4.5 days per chapter)
+                    pChap = pList[Math.min(Math.floor((i-1) / 4.5), pList.length - 1)];
+                    cChap = cList[Math.min(Math.floor((i-1) / 4.5), cList.length - 1)];
+                    mChap = mList[Math.min(Math.floor((i-1) / 5), mList.length - 1)];
                 } else {
-                    phase = "Revision & Mock Tests";
-                    pTask = "Revision / Mock Test"; cTask = "Revision / Mock Test"; mTask = "Revision / Mock Test";
+                    // Revision phase - cycle through chapters
+                    pChap = pList[(i - 96) % pList.length];
+                    cChap = cList[(i - 96) % cList.length];
+                    mChap = mList[(i - 96) % mList.length];
                 }
 
+                // Target generation
+                let targetStr = "";
+                if (i <= 35) targetStr = "Theory + Solved Examples + 10 MCQs";
+                else if (i <= 70) targetStr = "Advance Theory + 15 MCQs + 5 PYQs";
+                else if (i <= 95) targetStr = "Finish Chapter + 20 MCQs + 10 PYQs";
+                else targetStr = "Formula Revision + Full Chapter Test";
+
                 plan[i] = { 
-                    physics: pTask || "NA", 
-                    chemistry: cTask || "NA", 
-                    maths: mTask || "NA", 
+                    day: i,
                     phase,
+                    physics: { name: pChap.name, target: targetStr },
+                    chemistry: { name: cChap.name, target: targetStr },
+                    maths: { name: mChap.name, target: targetStr },
                     status: "pending", 
-                    tasks: { physics: false, chemistry: false, maths: false } // Individual task tracking
+                    tasks: { physics: false, chemistry: false, maths: false },
+                    studyHours: 0
                 };
             }
             return plan;
@@ -130,11 +210,8 @@
                 try {
                     const item = window.localStorage.getItem(key);
                     return item ? JSON.parse(item) : initialValue;
-                } catch (error) {
-                    return initialValue;
-                }
+                } catch (error) { return initialValue; }
             });
-
             const setValue = (value) => {
                 try {
                     const valueToStore = value instanceof Function ? value(storedValue) : value;
@@ -147,62 +224,57 @@
 
         // --- COMPONENTS ---
         
-        // 1. Header & Navigation
+        // 1. Header
         const Header = ({ activeTab, setActiveTab, isDark, toggleDark }) => {
             const tabs = [
                 { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard' },
-                { id: 'calendar', label: '60-Day Plan', icon: 'Calendar' },
+                { id: 'calendar', label: 'Plan (120 Days)', icon: 'Calendar' },
                 { id: 'syllabus', label: 'Syllabus', icon: 'BookOpen' },
                 { id: 'revision', label: 'Mistakes', icon: 'AlertCircle' },
-                { id: 'mocks', label: 'Mock Tests', icon: 'BarChart2' },
+                { id: 'mocks', label: 'Mocks', icon: 'BarChart2' },
                 { id: 'timer', label: 'Timer', icon: 'Timer' },
+                { id: 'settings', label: 'Settings', icon: 'Settings' },
             ];
 
             return (
-                <nav className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700">
+                <nav className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-700 transition-colors duration-300">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between h-16">
-                            <div className="flex items-center cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+                            <div className="flex items-center cursor-pointer group" onClick={() => setActiveTab('dashboard')}>
                                 <span className="text-xl font-extrabold text-navy dark:text-white flex items-center gap-2 tracking-tight">
-                                    <div className="bg-royal text-white p-1.5 rounded-lg"><i data-lucide="target" size={20}></i></div>
-                                    JEE 2027
+                                    <div className="bg-royal text-white p-1.5 rounded-lg group-hover:rotate-12 transition-transform duration-300">
+                                        <i data-lucide="target" size={20}></i>
+                                    </div>
+                                    MHT CET <span className="text-royal dark:text-blue-400">2027</span>
                                 </span>
                             </div>
-                            <div className="hidden md:flex items-center space-x-1">
+                            <div className="hidden lg:flex items-center space-x-1">
                                 {tabs.map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
-                                            activeTab === tab.id 
-                                            ? 'bg-blue-50 text-royal dark:bg-gray-700 dark:text-blue-400' 
-                                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
-                                        }`}
-                                    >
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                        className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all duration-200 ${
+                                            activeTab === tab.id ? 'bg-blue-50 text-royal dark:bg-gray-700 dark:text-blue-400 shadow-sm' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                                        }`}>
                                         <i data-lucide={tab.icon} size={16}></i> {tab.label}
                                     </button>
                                 ))}
                                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-2"></div>
-                                <button onClick={toggleDark} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
+                                <button onClick={toggleDark} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full dark:text-gray-300 dark:hover:bg-gray-700 transition-all duration-300 hover:rotate-12">
                                     <i data-lucide={isDark ? 'Sun' : 'Moon'} size={20}></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                     {/* Mobile Nav */}
-                    <div className="md:hidden flex overflow-x-auto px-2 py-2 border-t border-gray-100 dark:border-gray-700 no-scrollbar">
+                    <div className="lg:hidden flex overflow-x-auto px-2 py-2 border-t border-gray-100 dark:border-gray-700 no-scrollbar bg-white dark:bg-gray-800">
                         {tabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 mx-1 transition-colors ${
-                                    activeTab === tab.id ? 'bg-royal text-white' : 'text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300'
-                                }`}
-                            >
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 mx-1 transition-all ${
+                                    activeTab === tab.id ? 'bg-royal text-white shadow-md' : 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
                                 <i data-lucide={tab.icon} size={14}></i> {tab.label}
                             </button>
                         ))}
-                        <button onClick={toggleDark} className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 mx-1 text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300">
+                        <button onClick={toggleDark} className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1 mx-1 text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
                             <i data-lucide={isDark ? 'Sun' : 'Moon'} size={14}></i> Theme
                         </button>
                     </div>
@@ -210,9 +282,8 @@
             );
         };
 
-        // 2. Interactive Task Card for Dashboard
-        const ActionTaskCard = ({ subject, chapter, isCompleted, onToggle }) => {
-            // Styling based on subject
+        // 2. Action Task Card
+        const ActionTaskCard = ({ subject, data, isCompleted, onToggle, index }) => {
             const styles = {
                 physics: { color: 'text-royal', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', icon: 'Atom' },
                 chemistry: { color: 'text-chem', bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', icon: 'FlaskConical' },
@@ -220,216 +291,261 @@
             }[subject];
 
             return (
-                <div 
-                    onClick={onToggle}
-                    className={`cursor-pointer group relative overflow-hidden rounded-2xl p-5 border-2 transition-all duration-300 ${
-                        isCompleted 
-                        ? 'bg-gray-50 border-gray-200 opacity-60 dark:bg-gray-800 dark:border-gray-700' 
-                        : `${styles.bg} ${styles.border} hover:shadow-md hover:-translate-y-1`
-                    }`}
-                >
-                    <div className="flex items-start justify-between mb-4">
-                        <div className={`p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm ${styles.color}`}>
+                <div onClick={onToggle} style={{ animationDelay: `${index * 100}ms` }}
+                    className={`cursor-pointer group relative overflow-hidden rounded-2xl p-5 border-2 transition-all duration-300 animate-fade-in-up ${
+                        isCompleted ? 'bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700' : `${styles.bg} ${styles.border} hover:shadow-lg hover:-translate-y-1`
+                    }`}>
+                    <div className="flex items-start justify-between mb-2">
+                        <div className={`p-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm transition-transform duration-300 group-hover:scale-110 ${styles.color}`}>
                             <i data-lucide={styles.icon} size={24}></i>
                         </div>
-                        {/* Custom Big Checkbox */}
-                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
-                            isCompleted 
-                            ? 'bg-green-500 border-green-500 text-white' 
-                            : 'border-gray-300 text-transparent group-hover:border-gray-400 bg-white dark:bg-gray-800'
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                            isCompleted ? 'bg-green-500 border-green-500 text-white scale-110' : 'border-gray-300 text-transparent group-hover:border-gray-400 bg-white dark:bg-gray-800 scale-100'
                         }`}>
-                            <i data-lucide="check" size={18} className={isCompleted ? 'opacity-100' : 'opacity-0'}></i>
+                            <i data-lucide="check" size={18} className={`transition-transform duration-300 ${isCompleted ? 'scale-100' : 'scale-0'}`}></i>
                         </div>
                     </div>
-                    
                     <div>
-                        <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isCompleted ? 'text-gray-400' : styles.color}`}>
-                            {subject}
-                        </p>
-                        <h3 className={`text-lg font-bold leading-tight ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-white'}`}>
-                            {chapter}
-                        </h3>
+                        <div className="flex justify-between items-center mb-1">
+                            <p className={`text-xs font-bold uppercase tracking-wider ${isCompleted ? 'text-gray-400' : styles.color}`}>{subject}</p>
+                            {data.priority && <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${data.priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' : 'bg-gray-200 text-gray-700 dark:bg-gray-700'}`}>{data.priority}</span>}
+                        </div>
+                        <h3 className={`text-lg font-bold leading-tight transition-all duration-300 ${isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-white'}`}>{data.name}</h3>
+                        <p className={`text-xs mt-2 font-medium ${isCompleted ? 'text-gray-400' : 'text-gray-600 dark:text-gray-300'}`}>{data.target}</p>
                     </div>
                 </div>
             );
         };
 
-        // 3. Dashboard (The Action Center)
-        const Dashboard = ({ plan, chapters, settings, toggleTask, completeDay, setActiveTab }) => {
-            // Calculate overall progress
-            const totalChapters = Object.keys(chapters.physics).length + Object.keys(chapters.chemistry).length + Object.keys(chapters.maths).length;
-            const completedChapters = Object.values(chapters).reduce((acc, sub) => acc + Object.values(sub).filter(c => c.completed).length, 0);
-            const overallProgress = Math.round((completedChapters / totalChapters) * 100) || 0;
+        // 3. Dashboard
+        const Dashboard = ({ plan, chapters, settings, toggleTask, completeDay, setActiveTab, updateStudyHours }) => {
+            const [showConfetti, setShowConfetti] = useState(false);
+            const [hoursInput, setHoursInput] = useState("");
 
-            // Find current day (first day that is not fully completed)
-            const currentDayNum = parseInt(Object.keys(plan).find(day => plan[day].status !== 'completed')) || 60;
-            const currentDay = plan[currentDayNum];
+            // Calculate current day based on date
+            const startDate = new Date('2026-10-25');
+            const today = new Date();
+            // Reset time for accurate diff
+            startDate.setHours(0,0,0,0); today.setHours(0,0,0,0);
+            const diffDays = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
             
-            // Fallback for older localstorage data
-            const tasks = currentDay.tasks || { physics: false, chemistry: false, maths: false };
+            let currentDayNum = Math.max(1, diffDays + 1);
+            let isPlanCompleted = false;
+            
+            if (currentDayNum > 120) {
+                currentDayNum = 120;
+                isPlanCompleted = plan[120]?.status === 'completed';
+            }
+
+            const currentDay = plan[currentDayNum] || plan[1];
+            const tasks = currentDay?.tasks || { physics: false, chemistry: false, maths: false };
             const completedTasksCount = Object.values(tasks).filter(Boolean).length;
             const isDayFullyDone = completedTasksCount === 3;
 
-            const daysLeft = Math.max(0, Math.ceil((new Date(settings.targetDate) - new Date()) / (1000 * 60 * 60 * 24)));
+            const daysLeft = Math.max(0, Math.ceil((new Date(settings.targetDate) - today) / (1000 * 60 * 60 * 24)));
+
+            // Check for missed days
+            const missedDays = [];
+            for (let i = 1; i < currentDayNum; i++) {
+                if (plan[i] && plan[i].status !== 'completed' && plan[i].status !== 'missed') {
+                    missedDays.push(i);
+                }
+            }
+
+            const handleCompleteDay = () => {
+                setShowConfetti(true);
+                setTimeout(() => {
+                    completeDay(currentDayNum);
+                    setShowConfetti(false);
+                }, 1000);
+            };
+
+            const handleLogHours = (e) => {
+                e.preventDefault();
+                if(hoursInput > 0) {
+                    updateStudyHours(currentDayNum, parseFloat(hoursInput));
+                    setHoursInput("");
+                }
+            };
+
+            const handleSkipMissed = () => {
+                // Mark previous missed days as 'missed' so they stop showing up
+                const newPlan = { ...plan };
+                missedDays.forEach(d => { newPlan[d].status = 'missed'; });
+                // force update (localStorage will catch it)
+                completeDay(currentDayNum - 1); 
+            }
+
+            if (isPlanCompleted) {
+                return (
+                    <div className="flex flex-col items-center justify-center h-[70vh] animate-fade-in-up">
+                        <div className="text-6xl mb-4">🎉</div>
+                        <h1 className="text-3xl font-extrabold text-green-500 mb-2">Plan Completed!</h1>
+                        <p className="text-gray-500">You have successfully completed the 120-day MHT-CET preparation plan.</p>
+                        <button onClick={() => setActiveTab('mocks')} className="mt-6 bg-royal text-white px-6 py-2 rounded-lg font-bold">Check Mock Progress</button>
+                    </div>
+                );
+            }
 
             return (
-                <div className="space-y-8 animate-fade-in pb-10">
-                    
-                    {/* TOP HERO SECTION: TODAY'S FOCUS */}
-                    <div className="relative bg-navy rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden border border-gray-800">
-                        {/* Background Decoration */}
-                        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-royal rounded-full blur-3xl opacity-20"></div>
+                <div className="space-y-8 pb-10 relative">
+                    {showConfetti && (
+                        <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden">
+                            {[...Array(20)].map((_, i) => <div key={i} className="confetti-piece" style={{ '--x': Math.random() * 20 - 10 }}></div>)}
+                            <div className="absolute text-green-500 animate-pop-in bg-white px-8 py-4 rounded-full shadow-2xl font-bold text-2xl flex items-center gap-2"><i data-lucide="party-popper"></i> Day Completed!</div>
+                        </div>
+                    )}
+
+                    {/* Missed Day Recovery Banner */}
+                    {missedDays.length > 0 && (
+                        <div className="bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500 p-4 rounded-r-xl shadow-sm animate-fade-in-up flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                                <h3 className="font-bold text-orange-800 dark:text-orange-300 flex items-center gap-2"><i data-lucide="alert-triangle" size={18}></i> You are behind schedule</h3>
+                                <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">You have {missedDays.length} pending days from the past. Do you want to catch up or skip them?</p>
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button onClick={() => setActiveTab('calendar')} className="flex-1 sm:flex-none bg-white border border-orange-300 text-orange-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-orange-100 transition-colors">Catch Up</button>
+                                <button onClick={handleSkipMissed} className="flex-1 sm:flex-none bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-orange-600 transition-colors">Skip to Today</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* HERO */}
+                    <div className="relative bg-navy rounded-3xl p-6 sm:p-10 shadow-2xl overflow-hidden border border-gray-800 animate-fade-in-up">
+                        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-royal rounded-full blur-3xl opacity-20 animate-pulse"></div>
                         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-64 h-64 bg-chem rounded-full blur-3xl opacity-10"></div>
                         
                         <div className="relative z-10">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-gray-700/50 pb-6">
                                 <div>
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold tracking-wide uppercase mb-3">
-                                        <i data-lucide="zap" size={14}></i> Phase: {currentDay.phase}
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold tracking-wide uppercase mb-3 border border-blue-500/30">
+                                        <i data-lucide="zap" size={14} className="animate-pulse"></i> {currentDay.phase}
                                     </div>
-                                    <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                                        Day {currentDayNum} Focus
-                                    </h1>
-                                    <p className="text-gray-400 mt-2 text-sm sm:text-base">Tick off your targets below to conquer today.</p>
+                                    <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Day {currentDayNum} Target</h1>
+                                    <p className="text-gray-400 mt-2 text-sm sm:text-base">Tick off your targets below. Chemistry is prioritized for your weak areas.</p>
                                 </div>
-                                
-                                <div className="bg-gray-800/80 backdrop-blur-sm px-5 py-3 rounded-2xl border border-gray-700 text-center">
-                                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Days Left</p>
-                                    <p className="text-2xl font-bold text-white">{daysLeft}</p>
+                                <div className="bg-gray-800/80 backdrop-blur-sm px-6 py-4 rounded-2xl border border-gray-700 text-center shadow-lg transform hover:scale-105 transition-transform">
+                                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Days to Exam</p>
+                                    <p className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">{daysLeft}</p>
+                                    <p className="text-[10px] text-gray-500 mt-1">Target: {settings.targetDate}</p>
                                 </div>
                             </div>
 
-                            {/* Interactive Task Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <ActionTaskCard 
-                                    subject="physics" 
-                                    chapter={currentDay.physics} 
-                                    isCompleted={tasks.physics} 
-                                    onToggle={() => toggleTask(currentDayNum, 'physics')} 
-                                />
-                                <ActionTaskCard 
-                                    subject="chemistry" 
-                                    chapter={currentDay.chemistry} 
-                                    isCompleted={tasks.chemistry} 
-                                    onToggle={() => toggleTask(currentDayNum, 'chemistry')} 
-                                />
-                                <ActionTaskCard 
-                                    subject="maths" 
-                                    chapter={currentDay.maths} 
-                                    isCompleted={tasks.maths} 
-                                    onToggle={() => toggleTask(currentDayNum, 'maths')} 
-                                />
+                                <ActionTaskCard index={0} subject="physics" data={currentDay.physics} isCompleted={tasks.physics} onToggle={() => toggleTask(currentDayNum, 'physics')} />
+                                <ActionTaskCard index={1} subject="chemistry" data={currentDay.chemistry} isCompleted={tasks.chemistry} onToggle={() => toggleTask(currentDayNum, 'chemistry')} />
+                                <ActionTaskCard index={2} subject="maths" data={currentDay.maths} isCompleted={tasks.maths} onToggle={() => toggleTask(currentDayNum, 'maths')} />
                             </div>
 
-                            {/* Complete Day Action */}
-                            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                                <div className="flex items-center gap-3">
+                            {/* Action Bar */}
+                            <div className="mt-8 flex flex-col lg:flex-row items-center justify-between gap-4 bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                                <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
                                     <div className="flex -space-x-2">
                                         {[1,2,3].map(i => (
-                                            <div key={i} className={`w-8 h-8 rounded-full border-2 border-navy flex items-center justify-center ${completedTasksCount >= i ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-500'}`}>
+                                            <div key={i} className={`w-8 h-8 rounded-full border-2 border-navy flex items-center justify-center transition-all duration-300 ${completedTasksCount >= i ? 'bg-green-500 text-white scale-110' : 'bg-gray-700 text-gray-500'}`}>
                                                 {completedTasksCount >= i ? <i data-lucide="check" size={14}></i> : <span className="text-xs font-bold">{i}</span>}
                                             </div>
                                         ))}
                                     </div>
-                                    <span className="text-sm font-medium text-gray-300 ml-2">
-                                        {isDayFullyDone ? "All tasks completed! Great job." : `${completedTasksCount} of 3 targets completed`}
-                                    </span>
+                                    <span className="text-sm font-medium text-gray-300 ml-2">{isDayFullyDone ? "Ready to finish!" : `${completedTasksCount}/3 targets done`}</span>
                                 </div>
-                                <button 
-                                    onClick={() => completeDay(currentDayNum)}
-                                    disabled={!isDayFullyDone}
-                                    className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
-                                        isDayFullyDone 
-                                        ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30' 
-                                        : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                >
-                                    Complete Day {currentDayNum} & Move to Next
-                                </button>
+                                
+                                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                                    {/* Study Hours Tracker */}
+                                    <form onSubmit={handleLogHours} className="flex items-center bg-gray-700/50 rounded-lg overflow-hidden border border-gray-600">
+                                        <div className="px-3 text-gray-400"><i data-lucide="clock" size={16}></i></div>
+                                        <input type="number" step="0.5" min="0" max="12" placeholder="Log hrs" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="bg-transparent text-white w-20 px-2 py-2 text-sm focus:outline-none placeholder-gray-500" />
+                                        <button type="submit" className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 text-xs font-bold transition-colors">Log</button>
+                                    </form>
+                                    <div className="text-sm font-medium text-gray-400 flex items-center gap-1 bg-gray-800 px-3 py-2 rounded-lg border border-gray-700">
+                                        <i data-lucide="check-circle" size={14} className={currentDay.studyHours > 0 ? "text-green-500" : ""}></i> Today: {currentDay.studyHours || 0}h
+                                    </div>
+                                    <button onClick={handleCompleteDay} disabled={!isDayFullyDone}
+                                        className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                            isDayFullyDone ? 'bg-green-500 hover:bg-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)] transform hover:scale-105' : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                        }`}>
+                                        Complete Day
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    {/* NEW: WEEKLY REPORT */}
+                    <WeeklyReport plan={plan} currentDayNum={currentDayNum} />
+                </div>
+            );
+        };
 
-                    {/* OVERALL STATS */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-5">
-                            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 text-royal rounded-2xl"><i data-lucide="award" size={28}></i></div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Syllabus Completion</p>
-                                <p className="text-3xl font-extrabold text-gray-800 dark:text-white">{overallProgress}%</p>
-                            </div>
+        // 4. Weekly Report Component
+        const WeeklyReport = ({ plan, currentDayNum }) => {
+            // Get last 7 days
+            let totalHours = 0;
+            let daysCompleted = 0;
+            const last7Days = [];
+            
+            for (let i = Math.max(1, currentDayNum - 7); i <= currentDayNum; i++) {
+                if(plan[i]) {
+                    totalHours += (plan[i].studyHours || 0);
+                    if(plan[i].status === 'completed') daysCompleted++;
+                    last7Days.push({ day: i, ...plan[i] });
+                }
+            }
+
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up" style={{animationDelay: '200ms'}}>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-5">
+                        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-2xl"><i data-lucide="clock" size={28}></i></div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Weekly Study Hours</p>
+                            <p className="text-3xl font-extrabold text-gray-800 dark:text-white">{totalHours} <span className="text-base font-medium text-gray-400">hrs</span></p>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-5">
-                            <div className="p-4 bg-orange-50 dark:bg-orange-900/30 text-orange-500 rounded-2xl"><i data-lucide="flame" size={28}></i></div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Streak</p>
-                                <p className="text-3xl font-extrabold text-gray-800 dark:text-white">{currentDayNum - 1} <span className="text-sm font-medium text-gray-400">Days</span></p>
-                            </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-5">
+                        <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-2xl"><i data-lucide="check-square" size={28}></i></div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Days Completed (Last 7)</p>
+                            <p className="text-3xl font-extrabold text-gray-800 dark:text-white">{daysCompleted} <span className="text-base font-medium text-gray-400">/ {last7Days.length}</span></p>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-5 cursor-pointer hover:border-royal transition-colors" onClick={() => setActiveTab('mocks')}>
-                            <div className="p-4 bg-green-50 dark:bg-green-900/30 text-chem rounded-2xl"><i data-lucide="trending-up" size={28}></i></div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Next Step</p>
-                                <p className="text-lg font-bold text-royal dark:text-blue-400 mt-0.5">Take a Mock Test →</p>
-                            </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-5">
+                        <div className="p-4 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-2xl"><i data-lucide="target" size={28}></i></div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Daily Hours</p>
+                            <p className="text-3xl font-extrabold text-gray-800 dark:text-white">{(totalHours / Math.max(1, last7Days.length)).toFixed(1)} <span className="text-base font-medium text-gray-400">hrs</span></p>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // 4. Calendar
+        // 5. Calendar View
         const CalendarView = ({ plan, updatePlanStatus }) => {
             return (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in-up">
                     <div className="flex justify-between items-center">
-                        <h1 className="text-2xl font-bold">60-Day Overview</h1>
+                        <h1 className="text-2xl font-bold">120-Day Master Plan</h1>
                     </div>
-                    
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {Object.entries(plan).map(([day, data]) => (
-                            <div key={day} className={`bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border ${data.status === 'completed' ? 'border-green-500 bg-green-50/30' : data.status === 'difficult' ? 'border-orange-500 bg-orange-50/30' : 'border-gray-200 dark:border-gray-700'}`}>
+                        {Object.entries(plan).map(([day, data], index) => (
+                            <div key={day} style={{animationDelay: `${index * 10}ms`}} className={`bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border transition-all duration-300 hover:shadow-md hover:-translate-y-1 animate-fade-in-up ${data.status === 'completed' ? 'border-green-500 bg-green-50/30 dark:bg-green-900/10' : data.status === 'missed' ? 'border-gray-400 bg-gray-50 opacity-60' : 'border-gray-200 dark:border-gray-700'}`}>
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Day {day}</span>
-                                        <h3 className="font-bold text-sm leading-tight mt-1 text-gray-800 dark:text-gray-200">{data.phase}</h3>
+                                        <h3 className="font-bold text-[11px] leading-tight mt-1 text-gray-800 dark:text-gray-200">{data.phase}</h3>
                                     </div>
-                                    {data.status === 'completed' && <i data-lucide="check-circle" className="text-green-500" size={20}></i>}
-                                    {data.status === 'difficult' && <i data-lucide="alert-circle" className="text-orange-500" size={20}></i>}
+                                    {data.status === 'completed' && <i data-lucide="check-circle" className="text-green-500" size={18}></i>}
+                                    {data.status === 'missed' && <i data-lucide="x-circle" className="text-gray-400" size={18}></i>}
                                 </div>
-                                
-                                <div className="space-y-2 mt-4 text-xs">
-                                    <div className="flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-royal mt-1"></div>
-                                        <span className="flex-1 text-gray-600 dark:text-gray-400 line-clamp-2">{data.physics}</span>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-chem mt-1"></div>
-                                        <span className="flex-1 text-gray-600 dark:text-gray-400 line-clamp-2">{data.chemistry}</span>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-math mt-1"></div>
-                                        <span className="flex-1 text-gray-600 dark:text-gray-400 line-clamp-2">{data.maths}</span>
-                                    </div>
+                                <div className="space-y-1.5 mt-3 text-[11px]">
+                                    <div className="flex items-start gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-royal mt-1 shrink-0"></div><span className="text-gray-600 dark:text-gray-400 line-clamp-1">{data.physics.name}</span></div>
+                                    <div className="flex items-start gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-chem mt-1 shrink-0"></div><span className="text-gray-600 dark:text-gray-400 line-clamp-1">{data.chemistry.name}</span></div>
+                                    <div className="flex items-start gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-math mt-1 shrink-0"></div><span className="text-gray-600 dark:text-gray-400 line-clamp-1">{data.maths.name}</span></div>
                                 </div>
-
-                                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex justify-between gap-1">
-                                    <button 
-                                        onClick={() => updatePlanStatus(day, data.status === 'completed' ? 'pending' : 'completed')}
-                                        className={`flex-1 py-1.5 rounded text-[10px] font-bold transition-colors ${
-                                            data.status === 'completed' ? 'bg-gray-100 text-gray-600' : 'bg-green-500 text-white hover:bg-green-600'
-                                        }`}
-                                    >
+                                <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700 flex justify-between gap-1">
+                                    <button onClick={() => updatePlanStatus(day, data.status === 'completed' ? 'pending' : 'completed')}
+                                        className={`flex-1 py-1 rounded text-[10px] font-bold transition-all ${data.status === 'completed' ? 'bg-gray-100 text-gray-600 dark:bg-gray-700' : 'bg-green-500 text-white hover:bg-green-600'}`}>
                                         {data.status === 'completed' ? 'Undo' : 'Done'}
-                                    </button>
-                                    <button 
-                                        onClick={() => updatePlanStatus(day, data.status === 'difficult' ? 'pending' : 'difficult')}
-                                        className={`px-2 py-1.5 rounded border ${
-                                            data.status === 'difficult' ? 'bg-orange-100 border-orange-300 text-orange-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'
-                                        }`}
-                                        title="Flag as Difficult"
-                                    >
-                                        <i data-lucide="flag" size={12}></i>
                                     </button>
                                 </div>
                             </div>
@@ -439,7 +555,7 @@
             );
         };
 
-        // 5. Syllabus
+        // 6. Syllabus View
         const SyllabusView = ({ chapters, updateChapter }) => {
             const [activeSub, setActiveSub] = useState('physics');
             const [search, setSearch] = useState('');
@@ -449,71 +565,62 @@
             );
 
             return (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in-up">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <h1 className="text-2xl font-bold">Syllabus Tracker</h1>
                         <div className="relative w-full md:w-64">
                             <i data-lucide="search" className="absolute left-3 top-2.5 text-gray-400" size={16}></i>
-                            <input 
-                                type="text" placeholder="Search chapters..." value={search} onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-royal dark:bg-gray-800 dark:border-gray-700 text-sm"
-                            />
+                            <input type="text" placeholder="Search chapters..." value={search} onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-royal dark:bg-gray-800 dark:border-gray-700 text-sm transition-shadow" />
                         </div>
                     </div>
-
-                    <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto">
+                    <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 overflow-x-auto no-scrollbar">
                         {['physics', 'chemistry', 'maths'].map(sub => (
                             <button key={sub} onClick={() => setActiveSub(sub)}
-                                className={`px-4 py-2 font-bold text-sm rounded-t-lg transition-colors capitalize whitespace-nowrap ${
-                                    activeSub === sub ? 'bg-royal text-white' : 'text-gray-500 hover:text-royal'
-                                }`}
-                            >
+                                className={`px-4 py-2 font-bold text-sm rounded-t-lg transition-all duration-300 capitalize whitespace-nowrap ${activeSub === sub ? 'bg-royal text-white shadow-md' : 'text-gray-500 hover:text-royal hover:bg-gray-50'}`}>
                                 {sub === 'maths' ? 'Mathematics' : sub}
                             </button>
                         ))}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {filteredChapters.length === 0 ? (
-                            <div className="col-span-full text-center py-10 text-gray-500">No chapters found.</div>
-                        ) : (
-                            filteredChapters.map(([id, data]) => (
-                                <div key={id} className={`bg-white dark:bg-gray-800 p-5 rounded-xl border ${data.completed ? 'border-green-300 bg-green-50/20' : 'border-gray-200 dark:border-gray-700'}`}>
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className={`font-bold text-lg ${data.completed ? 'text-gray-400 line-through' : ''}`}>{data.name}</h3>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${data.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
-                                                {data.priority} Priority
-                                            </span>
+                        {filteredChapters.map(([id, data], index) => (
+                            <div key={id} style={{animationDelay: `${index * 20}ms`}} className={`bg-white dark:bg-gray-800 p-5 rounded-xl border transition-all duration-300 hover:shadow-md animate-fade-in-up ${data.completed ? 'border-green-300 bg-green-50/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h3 className={`font-bold text-lg transition-colors ${data.completed ? 'text-gray-400 line-through' : ''}`}>{data.name}</h3>
+                                        <div className="flex gap-2 mt-1">
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${data.priority === 'High' ? 'bg-red-100 text-red-700 dark:bg-red-900/30' : 'bg-gray-100 text-gray-700 dark:bg-gray-700'}`}>{data.priority} Priority</span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${data.difficulty === 'Advanced' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30'}`}>{data.difficulty}</span>
                                         </div>
-                                        <input type="checkbox" checked={data.completed} onChange={(e) => updateChapter(activeSub, id, 'completed', e.target.checked)}
-                                            className="w-6 h-6 rounded text-royal focus:ring-royal cursor-pointer border-gray-300" />
                                     </div>
-                                    
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <span className="text-gray-600 dark:text-gray-400 text-xs font-medium w-24">Theory</span>
-                                            <input type="range" min="0" max="100" value={data.theory} onChange={(e) => updateChapter(activeSub, id, 'theory', parseInt(e.target.value))} className="flex-1 accent-royal h-1.5" />
-                                            <span className="text-xs font-bold w-8 text-right">{data.theory}%</span>
-                                        </div>
-                                        <div className="flex items-center justify-between gap-4">
-                                            <span className="text-gray-600 dark:text-gray-400 text-xs font-medium w-24">PYQ Practice</span>
-                                            <input type="range" min="0" max="100" value={data.pyq} onChange={(e) => updateChapter(activeSub, id, 'pyq', parseInt(e.target.value))} className="flex-1 accent-royal h-1.5" />
-                                            <span className="text-xs font-bold w-8 text-right">{data.pyq}%</span>
-                                        </div>
+                                    <div className="relative flex items-center">
+                                        <input type="checkbox" checked={data.completed} onChange={(e) => updateChapter(activeSub, id, 'completed', e.target.checked)}
+                                            className="peer w-6 h-6 rounded text-royal focus:ring-royal cursor-pointer border-gray-300 transition-all checked:scale-110" />
+                                        {data.completed && <i data-lucide="check" className="absolute text-white pointer-events-none left-1 animate-pop-in" size={16}></i>}
                                     </div>
                                 </div>
-                            ))
-                        )}
+                                <div className="space-y-4 text-sm mt-4">
+                                    <div>
+                                        <div className="flex justify-between mb-1 text-xs font-medium text-gray-600 dark:text-gray-400"><span>Theory</span><span>{data.theory}%</span></div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700"><div className="bg-royal h-2 rounded-full transition-all duration-500" style={{ width: `${data.theory}%` }}></div></div>
+                                        <input type="range" min="0" max="100" value={data.theory} onChange={(e) => updateChapter(activeSub, id, 'theory', parseInt(e.target.value))} className="w-full mt-2 accent-royal h-1 opacity-50 hover:opacity-100 transition-opacity cursor-pointer" />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between mb-1 text-xs font-medium text-gray-600 dark:text-gray-400"><span>PYQ Practice</span><span>{data.pyq}%</span></div>
+                                        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700"><div className="bg-green-500 h-2 rounded-full transition-all duration-500" style={{ width: `${data.pyq}%` }}></div></div>
+                                        <input type="range" min="0" max="100" value={data.pyq} onChange={(e) => updateChapter(activeSub, id, 'pyq', parseInt(e.target.value))} className="w-full mt-2 accent-green-500 h-1 opacity-50 hover:opacity-100 transition-opacity cursor-pointer" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
         };
 
-        // 6. Revision (Mistake Tracker)
+        // 7. Revision Tracker
         const RevisionTracker = ({ mistakes, addMistake, resolveMistake }) => {
             const [form, setForm] = useState({ chapter: '', mistake: '', concept: '' });
-
             const handleSubmit = (e) => {
                 e.preventDefault();
                 if(!form.chapter || !form.mistake) return;
@@ -522,34 +629,31 @@
             };
 
             return (
-                <div className="space-y-6 animate-fade-in">
+                <div className="space-y-6 animate-fade-in-up">
                     <h1 className="text-2xl font-bold">Mistake Tracker</h1>
-                    
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <h2 className="font-bold mb-4">Log a Mistake</h2>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <h2 className="font-bold mb-4 text-royal dark:text-blue-400">Log a New Mistake</h2>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <input required type="text" placeholder="Chapter Name (e.g., Kinematics)" value={form.chapter} onChange={e => setForm({...form, chapter: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm" />
-                                <input required type="text" placeholder="Correct Concept / Formula" value={form.concept} onChange={e => setForm({...form, concept: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm" />
+                                <input required type="text" placeholder="Chapter (e.g., Thermodynamics)" value={form.chapter} onChange={e => setForm({...form, chapter: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm focus:ring-2 focus:ring-royal" />
+                                <input required type="text" placeholder="Correct Concept / Formula" value={form.concept} onChange={e => setForm({...form, concept: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm focus:ring-2 focus:ring-royal" />
                             </div>
-                            <textarea required placeholder="Describe the mistake (e.g., Forgot to convert units to SI)" value={form.mistake} onChange={e => setForm({...form, mistake: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full h-20 text-sm"></textarea>
-                            <button type="submit" className="bg-royal text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors">Save to Tracker</button>
+                            <textarea required placeholder="Describe the mistake (e.g., Used wrong sign convention)" value={form.mistake} onChange={e => setForm({...form, mistake: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full h-20 text-sm focus:ring-2 focus:ring-royal"></textarea>
+                            <button type="submit" className="bg-royal text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-all hover:scale-105 shadow-md">Save Mistake</button>
                         </form>
                     </div>
-
                     <div className="grid grid-cols-1 gap-4">
                         {mistakes.length === 0 && <p className="text-gray-500 text-center py-8 text-sm">No mistakes logged yet. Keep practicing!</p>}
-                        {mistakes.map(m => (
-                            <div key={m.id} className={`p-5 rounded-xl border transition-all ${m.resolved ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white dark:bg-gray-800 border-red-200 shadow-sm'}`}>
-                                <div className="flex justify-between items-start gap-4">
-                                    <div>
-                                        <span className="text-xs font-bold text-red-500 uppercase tracking-wide">{m.chapter}</span>
-                                        <p className={`font-medium mt-1 text-gray-800 dark:text-gray-200 ${m.resolved ? 'line-through' : ''}`}>{m.mistake}</p>
-                                        <p className="text-sm text-gray-500 mt-2 bg-gray-50 dark:bg-gray-700/50 p-2 rounded inline-block"><strong className="text-gray-700 dark:text-gray-300">Concept:</strong> {m.concept}</p>
+                        {mistakes.map((m, i) => (
+                            <div key={m.id} style={{animationDelay: `${i * 50}ms`}} className={`p-5 rounded-xl border transition-all duration-300 animate-fade-in-up ${m.resolved ? 'bg-gray-50 border-gray-200 opacity-60 dark:bg-gray-800 dark:border-gray-700' : 'bg-white dark:bg-gray-800 border-red-200 dark:border-red-900/50 shadow-sm hover:shadow-md'}`}>
+                                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                    <div className="flex-1">
+                                        <span className="text-xs font-bold text-red-500 uppercase tracking-wide bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">{m.chapter}</span>
+                                        <p className={`font-medium mt-2 text-gray-800 dark:text-gray-200 ${m.resolved ? 'line-through' : ''}`}>{m.mistake}</p>
+                                        <p className="text-sm text-gray-600 mt-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600"><strong className="text-royal dark:text-blue-400">Concept:</strong> {m.concept}</p>
                                     </div>
-                                    <button onClick={() => resolveMistake(m.id)}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap ${m.resolved ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
-                                        {m.resolved ? 'Resolved' : 'Mark Resolved'}
+                                    <button onClick={() => resolveMistake(m.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all active:scale-95 ${m.resolved ? 'bg-gray-200 text-gray-600 cursor-default' : 'bg-green-100 text-green-700 hover:bg-green-200 shadow-sm'}`}>
+                                        {m.resolved ? '✓ Resolved' : 'Mark Resolved'}
                                     </button>
                                 </div>
                             </div>
@@ -559,11 +663,13 @@
             );
         };
 
-        // 7. Mock Tests
-        const MockTests = ({ mocks, addMock }) => {
+        // 8. Mock Tests (MHT CET Pattern: Maths 100, Phy 50, Chem 50)
+        const MockTests = ({ mocks, addMock, settings }) => {
             const [form, setForm] = useState({ name: '', physics: '', chemistry: '', maths: '' });
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
+
+            const maxTotal = (settings.phyMax || 50) + (settings.chemMax || 50) + (settings.mathMax || 100);
 
             const handleSubmit = (e) => {
                 e.preventDefault();
@@ -583,44 +689,51 @@
                         data: {
                             labels: mocks.map(m => m.name),
                             datasets: [{
-                                label: 'Total Score (Out of 300)',
+                                label: `MHT CET Score (Out of ${maxTotal})`,
                                 data: mocks.map(m => m.total),
                                 borderColor: '#1c58c4',
                                 backgroundColor: 'rgba(28, 88, 196, 0.1)',
-                                tension: 0.3, fill: true, pointBackgroundColor: '#0b1a40', pointRadius: 4
+                                tension: 0.4, fill: true, pointBackgroundColor: '#0b1a40', pointRadius: 5, pointHoverRadius: 7
                             }]
                         },
-                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 300 } } }
+                        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1000, easing: 'easeOutQuart' }, scales: { y: { beginAtZero: true, max: maxTotal } } }
                     });
                 }
-            }, [mocks]);
+            }, [mocks, maxTotal]);
 
             return (
-                <div className="space-y-6 animate-fade-in">
-                    <h1 className="text-2xl font-bold">Mock Test Analytics</h1>
-                    
+                <div className="space-y-6 animate-fade-in-up">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                        <h1 className="text-2xl font-bold">Mock Test Analytics</h1>
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded border border-yellow-300">Provisional: Math(100), Phy(50), Chem(50)</span>
+                    </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
+                        <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 h-fit shadow-sm">
                             <h2 className="font-bold mb-4">Add Test Score</h2>
                             <form onSubmit={handleSubmit} className="space-y-3">
-                                <input required type="text" placeholder="Test Name (e.g., Allen Mock 1)" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm" />
+                                <input required type="text" placeholder="Test Name (e.g., MHT CET Mock 1)" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm focus:ring-2 focus:ring-royal" />
                                 <div className="grid grid-cols-3 gap-2">
-                                    <input required type="number" min="0" max="100" placeholder="Phy (100)" value={form.physics} onChange={e => setForm({...form, physics: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm" />
-                                    <input required type="number" min="0" max="100" placeholder="Chem (100)" value={form.chemistry} onChange={e => setForm({...form, chemistry: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm" />
-                                    <input required type="number" min="0" max="100" placeholder="Math (100)" value={form.maths} onChange={e => setForm({...form, maths: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm" />
+                                    <div>
+                                        <label className="text-[10px] text-gray-500">Phy ({settings.phyMax})</label>
+                                        <input required type="number" min="0" max={settings.phyMax} placeholder={`/${settings.phyMax}`} value={form.physics} onChange={e => setForm({...form, physics: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm focus:ring-2 focus:ring-royal" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500">Chem ({settings.chemMax})</label>
+                                        <input required type="number" min="0" max={settings.chemMax} placeholder={`/${settings.chemMax}`} value={form.chemistry} onChange={e => setForm({...form, chemistry: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm focus:ring-2 focus:ring-royal" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500">Math ({settings.mathMax})</label>
+                                        <input required type="number" min="0" max={settings.mathMax} placeholder={`/${settings.mathMax}`} value={form.maths} onChange={e => setForm({...form, maths: e.target.value})} className="p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 w-full text-sm focus:ring-2 focus:ring-royal" />
+                                    </div>
                                 </div>
-                                <button type="submit" className="w-full bg-royal text-white py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700">Save Score</button>
+                                <button type="submit" className="w-full bg-royal text-white py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95 shadow-md">Save Score</button>
                             </form>
                         </div>
-
                         <div className="lg:col-span-2 space-y-6">
-                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 h-64 relative">
-                                {mocks.length === 0 ? (
-                                    <div className="flex items-center justify-center h-full text-gray-500 text-sm">Add scores to see your progress trend.</div>
-                                ) : <canvas ref={chartRef}></canvas>}
+                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 h-72 relative shadow-sm">
+                                {mocks.length === 0 ? <div className="flex items-center justify-center h-full text-gray-500 text-sm">Add scores to see your progress trend.</div> : <canvas ref={chartRef}></canvas>}
                             </div>
-                            
-                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden overflow-x-auto">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden overflow-x-auto shadow-sm">
                                 <table className="w-full text-left text-sm min-w-[400px]">
                                     <thead className="bg-gray-50 dark:bg-gray-700/50">
                                         <tr>
@@ -633,12 +746,12 @@
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                                         {mocks.map(m => (
-                                            <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                                            <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
                                                 <td className="px-4 py-3 font-medium">{m.name}</td>
                                                 <td className="px-4 py-3">{m.physics}</td>
                                                 <td className="px-4 py-3">{m.chemistry}</td>
                                                 <td className="px-4 py-3">{m.maths}</td>
-                                                <td className="px-4 py-3 text-right font-bold text-royal dark:text-blue-400">{m.total}/300</td>
+                                                <td className="px-4 py-3 text-right font-bold text-royal dark:text-blue-400">{m.total}/{maxTotal}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -650,12 +763,76 @@
             );
         };
 
-        // 8. Pomodoro Timer
+        // 9. Settings (Export/Import)
+        const SettingsView = ({ settings, updateSettings, exportData, importData, resetApp }) => {
+            const fileInputRef = useRef(null);
+
+            return (
+                <div className="max-w-3xl mx-auto space-y-6 animate-fade-in-up pb-10">
+                    <h1 className="text-2xl font-bold">Settings & Backup</h1>
+                    
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4 shadow-sm">
+                        <h2 className="font-bold border-b pb-2 dark:border-gray-700">Exam Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Target Exam Date (Adjustable)</label>
+                                <input type="date" value={settings.targetDate} onChange={(e) => updateSettings('targetDate', e.target.value)} className="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Target Percentile</label>
+                                <input type="number" value={settings.targetPercentile} onChange={(e) => updateSettings('targetPercentile', parseInt(e.target.value))} className="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4 shadow-sm">
+                        <h2 className="font-bold border-b pb-2 dark:border-gray-700">Mock Test Pattern</h2>
+                        <p className="text-sm text-gray-500">Set the maximum marks for each subject. Default is Math (100), Phy (50), Chem (50) based on previous patterns.</p>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Physics Max</label>
+                                <input type="number" value={settings.phyMax} onChange={(e) => updateSettings('phyMax', parseInt(e.target.value))} className="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Chemistry Max</label>
+                                <input type="number" value={settings.chemMax} onChange={(e) => updateSettings('chemMax', parseInt(e.target.value))} className="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">Maths Max</label>
+                                <input type="number" value={settings.mathMax} onChange={(e) => updateSettings('mathMax', parseInt(e.target.value))} className="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4 shadow-sm">
+                        <h2 className="font-bold border-b pb-2 dark:border-gray-700">Backup & Restore</h2>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <button onClick={exportData} className="flex-1 bg-blue-100 text-blue-700 hover:bg-blue-200 px-4 py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="download"></i> Export Data (JSON)
+                            </button>
+                            <button onClick={() => fileInputRef.current.click()} className="flex-1 bg-green-100 text-green-700 hover:bg-green-200 px-4 py-3 rounded-lg font-bold transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="upload"></i> Import Data
+                            </button>
+                            <input type="file" ref={fileInputRef} onChange={importData} accept=".json" className="hidden" />
+                        </div>
+                        <p className="text-xs text-gray-500 text-center">Use this to backup your progress before switching devices.</p>
+                    </div>
+
+                    <div className="bg-red-50 dark:bg-red-900/10 p-6 rounded-xl border border-red-200 dark:border-red-900/30">
+                        <h2 className="text-lg font-bold text-red-700 dark:text-red-400 mb-2">Danger Zone</h2>
+                        <p className="text-sm text-red-600 dark:text-red-300 mb-4">This will permanently delete all your progress, checked chapters, and logged mistakes.</p>
+                        <button onClick={() => { if(window.confirm("Are you absolutely sure? This cannot be undone.")) resetApp(); }} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-bold transition-colors">Reset All Progress</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 10. Timer
         const StudyTimer = () => {
             const [timeLeft, setTimeLeft] = useState(25 * 60);
             const [isActive, setIsActive] = useState(false);
             const [mode, setMode] = useState('focus'); 
-            const [subject, setSubject] = useState('Physics');
+            const [subject, setSubject] = useState('Chemistry');
 
             useEffect(() => {
                 let interval = null;
@@ -663,14 +840,12 @@
                     interval = setInterval(() => setTimeLeft(timeLeft - 1), 1000);
                 } else if (timeLeft === 0) {
                     setIsActive(false);
-                    // Simple beep sound simulation
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = audioCtx.createOscillator();
-                    oscillator.type = 'sine';
-                    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
-                    oscillator.connect(audioCtx.destination);
-                    oscillator.start();
-                    oscillator.stop(audioCtx.currentTime + 0.5);
+                    try {
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioCtx.createOscillator();
+                        oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                        oscillator.connect(audioCtx.destination); oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.5);
+                    } catch(e) {}
                 }
                 return () => clearInterval(interval);
             }, [isActive, timeLeft]);
@@ -681,33 +856,26 @@
             const formatTime = (seconds) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 
             return (
-                <div className="flex flex-col items-center justify-center py-10 animate-fade-in">
+                <div className="flex flex-col items-center justify-center py-10 animate-fade-in-up">
                     <div className="bg-white dark:bg-gray-800 p-8 sm:p-10 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 w-full max-w-md text-center">
                         <div className="flex justify-center gap-2 mb-10 bg-gray-100 dark:bg-gray-700 p-1 rounded-full w-fit mx-auto">
-                            <button onClick={() => changeMode('focus')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${mode === 'focus' ? 'bg-white shadow text-royal dark:bg-gray-800 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>Focus</button>
-                            <button onClick={() => changeMode('shortBreak')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${mode === 'shortBreak' ? 'bg-white shadow text-green-600 dark:bg-gray-800 dark:text-green-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>Break</button>
+                            <button onClick={() => changeMode('focus')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${mode === 'focus' ? 'bg-white shadow text-royal dark:bg-gray-800 dark:text-blue-400 scale-105' : 'text-gray-500'}`}>Focus (25m)</button>
+                            <button onClick={() => changeMode('shortBreak')} className={`px-6 py-2 rounded-full font-bold text-sm transition-all ${mode === 'shortBreak' ? 'bg-white shadow text-green-600 dark:bg-gray-800 dark:text-green-400 scale-105' : 'text-gray-500'}`}>Break (5m)</button>
                         </div>
-                        
                         <div className={`text-7xl sm:text-8xl font-extrabold tracking-tight mb-8 font-mono ${isActive ? (mode === 'focus' ? 'text-royal' : 'text-green-500') : 'text-gray-800 dark:text-white'}`}>
                             {formatTime(timeLeft)}
                         </div>
-
                         <div className="mb-10">
-                            <select value={subject} onChange={(e) => setSubject(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-royal focus:border-royal block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white font-medium">
-                                <option value="Physics">Physics</option>
+                            <select value={subject} onChange={(e) => setSubject(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-royal focus:border-royal block w-full p-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white font-medium cursor-pointer">
                                 <option value="Chemistry">Chemistry</option>
+                                <option value="Physics">Physics</option>
                                 <option value="Mathematics">Mathematics</option>
                                 <option value="Revision">Revision / PYQs</option>
                             </select>
                         </div>
-
                         <div className="flex justify-center gap-4">
-                            <button onClick={toggleTimer} className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-105 active:scale-95 ${isActive ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/30' : 'bg-royal hover:bg-blue-700 text-white shadow-royal/30'}`}>
-                                {isActive ? 'Pause Timer' : 'Start Focus'}
-                            </button>
-                            <button onClick={resetTimer} className="w-1/3 py-4 rounded-xl font-bold text-lg bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                Reset
-                            </button>
+                            <button onClick={toggleTimer} className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:-translate-y-1 active:translate-y-0 ${isActive ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-royal hover:bg-blue-700 text-white'}`}>{isActive ? 'Pause' : 'Start Focus'}</button>
+                            <button onClick={resetTimer} className="w-1/3 py-4 rounded-xl font-bold text-lg bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 transition-colors">Reset</button>
                         </div>
                     </div>
                 </div>
@@ -717,24 +885,31 @@
         // --- APP COMPONENT ---
         const App = () => {
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [isDark, setIsDark] = useLocalStorage('jee_darkMode_v2', false);
+            const [isDark, setIsDark] = useLocalStorage('mht4m_darkMode', false);
             
-            // Initialize Data
             const defaultChapters = () => {
                 const chaps = { physics: {}, chemistry: {}, maths: {} };
-                SYLLABUS_DATA.physics.forEach(c => chaps.physics[c] = { name: c, completed: false, theory: 0, pyq: 0, priority: 'High' });
-                SYLLABUS_DATA.chemistry.forEach(c => chaps.chemistry[c] = { name: c, completed: false, theory: 0, pyq: 0, priority: 'High' });
-                SYLLABUS_DATA.maths.forEach(c => chaps.maths[c] = { name: c, completed: false, theory: 0, pyq: 0, priority: 'High' });
+                SYLLABUS_DATA.physics.forEach(c => chaps.physics[c.name] = { name: c.name, completed: false, theory: 0, pyq: 0, priority: c.priority, difficulty: c.difficulty });
+                SYLLABUS_DATA.chemistry.forEach(c => chaps.chemistry[c.name] = { name: c.name, completed: false, theory: 0, pyq: 0, priority: c.priority, difficulty: c.difficulty });
+                SYLLABUS_DATA.maths.forEach(c => chaps.maths[c.name] = { name: c.name, completed: false, theory: 0, pyq: 0, priority: c.priority, difficulty: c.difficulty });
                 return chaps;
             };
 
-            const [settings, setSettings] = useLocalStorage('jee_settings_v2', { targetDate: '2027-01-24', dailyGoal: 5, targetPercentile: 99 });
-            const [plan, setPlan] = useLocalStorage('jee_plan_v2', generatePlan());
-            const [chapters, setChapters] = useLocalStorage('jee_chapters_v2', defaultChapters());
-            const [mistakes, setMistakes] = useLocalStorage('jee_mistakes_v2', []);
-            const [mocks, setMocks] = useLocalStorage('jee_mocks_v2', []);
+            // Setting defaults
+            const defaultSettings = { 
+                targetDate: '2027-03-15', 
+                targetPercentile: 99, 
+                phyMax: 50, 
+                chemMax: 50, 
+                mathMax: 100 
+            };
 
-            // Apply Dark Mode
+            const [settings, setSettings] = useLocalStorage('mht4m_settings', defaultSettings);
+            const [plan, setPlan] = useLocalStorage('mht4m_plan', generatePlan());
+            const [chapters, setChapters] = useLocalStorage('mht4m_chapters', defaultChapters());
+            const [mistakes, setMistakes] = useLocalStorage('mht4m_mistakes', []);
+            const [mocks, setMocks] = useLocalStorage('mht4m_mocks', []);
+
             useEffect(() => {
                 if (isDark) document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
@@ -743,28 +918,27 @@
 
             const toggleDark = () => setIsDark(!isDark);
 
-            // Toggle individual subject task on Dashboard
             const toggleTask = (day, subject) => {
                 setPlan(prev => {
                     const newPlan = { ...prev };
                     const dayData = { ...newPlan[day] };
-                    
-                    // Fallback if tasks don't exist yet
                     if (!dayData.tasks) dayData.tasks = { physics: false, chemistry: false, maths: false };
-                    
                     dayData.tasks[subject] = !dayData.tasks[subject];
-                    
-                    // If all 3 are true, we could auto-mark as completed, but we'll let user click the button
                     newPlan[day] = dayData;
                     return newPlan;
                 });
             };
 
-            // Complete the day and move to the next
             const completeDay = (day) => {
                 setPlan(prev => ({ ...prev, [day]: { ...prev[day], status: 'completed' } }));
-                // Optional: scroll to top to show the next day
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const updateStudyHours = (day, hours) => {
+                setPlan(prev => ({ 
+                    ...prev, 
+                    [day]: { ...prev[day], studyHours: (prev[day].studyHours || 0) + hours } 
+                }));
             };
 
             const updatePlanStatus = (day, status) => {
@@ -778,26 +952,61 @@
                 }));
             };
 
+            const updateSettings = (key, value) => {
+                setSettings(prev => ({ ...prev, [key]: value }));
+            };
+
+            // Export / Import
+            const exportData = () => {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ plan, chapters, mistakes, mocks, settings }));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "mht_cet_2027_backup.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            };
+
+            const importData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (parsed.plan && parsed.chapters) {
+                            setPlan(parsed.plan);
+                            setChapters(parsed.chapters);
+                            if (parsed.mistakes) setMistakes(parsed.mistakes);
+                            if (parsed.mocks) setMocks(parsed.mocks);
+                            if (parsed.settings) setSettings(parsed.settings);
+                            alert("Data imported successfully!");
+                        } else {
+                            alert("Invalid file format.");
+                        }
+                    } catch (err) {
+                        alert("Error parsing file.");
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const resetApp = () => {
+                localStorage.clear();
+                window.location.reload();
+            };
+
             return (
                 <div className="min-h-screen pb-20">
                     <Header activeTab={activeTab} setActiveTab={setActiveTab} isDark={isDark} toggleDark={toggleDark} />
-                    
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        {activeTab === 'dashboard' && (
-                            <Dashboard 
-                                plan={plan} 
-                                chapters={chapters} 
-                                settings={settings} 
-                                toggleTask={toggleTask} 
-                                completeDay={completeDay}
-                                setActiveTab={setActiveTab} 
-                            />
-                        )}
+                        {activeTab === 'dashboard' && <Dashboard plan={plan} chapters={chapters} settings={settings} toggleTask={toggleTask} completeDay={completeDay} updateStudyHours={updateStudyHours} setActiveTab={setActiveTab} />}
                         {activeTab === 'calendar' && <CalendarView plan={plan} updatePlanStatus={updatePlanStatus} />}
                         {activeTab === 'syllabus' && <SyllabusView chapters={chapters} updateChapter={updateChapter} />}
                         {activeTab === 'revision' && <RevisionTracker mistakes={mistakes} addMistake={m => setMistakes([m, ...mistakes])} resolveMistake={id => setMistakes(mistakes.map(x => x.id === id ? {...x, resolved: true} : x))} />}
-                        {activeTab === 'mocks' && <MockTests mocks={mocks} addMock={m => setMocks([...mocks, m])} />}
+                        {activeTab === 'mocks' && <MockTests mocks={mocks} addMock={m => setMocks([...mocks, m])} settings={settings} />}
                         {activeTab === 'timer' && <StudyTimer />}
+                        {activeTab === 'settings' && <SettingsView settings={settings} updateSettings={updateSettings} exportData={exportData} importData={importData} resetApp={resetApp} />}
                     </main>
                 </div>
             );
